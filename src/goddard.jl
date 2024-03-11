@@ -22,7 +22,7 @@ function goddard_model(N::Int; T = Float64, backend = nothing, kwargs...)
     mf = 0.6
     n, p = 3, 1
 
-    core = ExaModels.ExaCore(T, backend)
+    core = ExaModels.ExaCore(T; backend = backend)
     # Intiial position
     x0s = ExaModels.convert_array([(i, x0[i]) for i = 1:3], backend)
 

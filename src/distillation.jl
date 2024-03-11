@@ -17,7 +17,7 @@ function distillation_column_model(N = 3; T = Float64, backend = nothing, kwargs
     itr1 = ExaModels.convert_array(collect(Iterators.product(1:N, FT+1:NT)), backend)
     itr2 = ExaModels.convert_array(collect(Iterators.product(0:N, 0:NT+1)), backend)
 
-    c = ExaModels.ExaCore(T, backend)
+    c = ExaModels.ExaCore(T; backend = backend)
 
     xA = ExaModels.variable(c, 0:N, 0:NT+1; start = 0.5)
     yA = ExaModels.variable(c, 0:N, 0:NT+1; start = 0.5)

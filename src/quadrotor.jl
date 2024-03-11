@@ -12,7 +12,7 @@ function quadrotor_model(N = 3; T = Float64, backend = nothing, kwargs...)
     Q = [1, 0, 1, 0, 1, 0, 1, 1, 1]
     Qf = [1, 0, 1, 0, 1, 0, 1, 1, 1] / dt
 
-    c = ExaModels.ExaCore(T, backend)
+    c = ExaModels.ExaCore(T; backend = backend)
 
     x0s = ExaModels.convert_array([(i, 0.0) for i = 1:n], backend)
     itr0 = ExaModels.convert_array(
