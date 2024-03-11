@@ -26,13 +26,8 @@ function __init__()
     if haskey(ENV, "EXA_MODELS_DEPOT")
         global TMPDIR = ENV["EXA_MODELS_DEPOT"]
     else
-<<<<<<< HEAD
-        global TMPDIR = tempname()
-        mkdir(TMPDIR)
-=======
         global TMPDIR = joinpath(@__DIR__,"..","data")
         mkpath(TMPDIR)
->>>>>>> 569fd3a (separate changes)
     end
     PowerModels.silence()
 end
