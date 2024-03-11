@@ -1,11 +1,14 @@
 function ac_scopf_model(
-    filename, contingencies;
+    filename = "pglib_opf_case3_lmbd.m";
     backend = nothing,
+    data = parse_ac_power_data(filename, backend),
+    contingencies = length(data.branch), # full n-1 formulation by default
+    corrective_action_ratio = 0.1, 
     T = Float64,
     kwargs...
-)
+        )
+    
     # Raw data
-    data = parse_ac_power_data(filename, backend)
     nbus = length(data.bus)
     ngen = length(data.gen)
     narc = length(data.arc)
@@ -27,7 +30,7 @@ function ac_scopf_model(
             end
         end
     end
-    display(idx_branch_down)
+
     idx_bus = [(b, k) for b in data.bus, k in 1:K]
     idx_gen = [(b, k) for b in data.gen, k in 1:K]
     idx_arc = [(b, k) for b in data.arc, k in 1:K]
@@ -41,7 +44,7 @@ function ac_scopf_model(
         max_inj[b.t_idx + (k-1) * narc] = 0.0
     end
 
-    core = ExaModels.ExaCore(T, backend)
+    core = ExaModels.ExaCore(T; backend = backend)
 
     # Voltage angle and magnitudes
     va = ExaModels.variable(core, 1:nbus, 1:K; start=zeros(nbus, K))
@@ -155,7 +158,7 @@ function ac_scopf_model(
     c14 = ExaModels.constraint!(core, c10, g.bus + (k-1)*nbus=> -qg[g.i, k] for (g, k) in idx_gen)
 
     # Corrective OPF formulation
-    Δp = 0.1 .* (data.pmax .- data.pmin)
+    Δp = corrective_action_ratio .* (data.pmax .- data.pmin)
     idx_gen_cont = [(b, k) for b in data.gen, k in 2:K] # discard base case
     c_corrective_gen = ExaModels.constraint(
         core,
