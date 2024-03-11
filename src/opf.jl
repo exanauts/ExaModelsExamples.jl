@@ -120,7 +120,6 @@ function process_ac_power_data(filename)
     d, f = splitdir(filename)
     name,ext = splitext(f)
     JLD2.save(joinpath(TMPDIR, name * ".jld2"), "data", data)
-
     return data
 end
 
