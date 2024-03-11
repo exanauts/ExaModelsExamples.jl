@@ -1,30 +1,3 @@
-function get_power_case(filename)
-    if !isfile(filename)
-        ff = joinpath(TMPDIR, filename)
-        if !isfile(ff)
-            @info "Downloading $filename"
-            Downloads.download(
-                "https://raw.githubusercontent.com/power-grid-lib/pglib-opf/dc6be4b2f85ca0e776952ec22cbd4c22396ea5a3/$filename",
-                joinpath(TMPDIR, filename),
-            )
-            return joinpath(TMPDIR, filename)
-        else
-            return ff
-        end
-    else
-        return filename
-    end
-end
-
-
-function get_power_data_ref(filename)
-    case = get_power_case(filename)
-    data = PowerModels.parse_file(case)
-    PowerModels.standardize_cost_terms!(data, order = 2)
-    PowerModels.calc_thermal_limits!(data)
-    return PowerModels.build_ref(data)[:it][:pm][:nw][0]
-end
-
 convert_data(data::N, backend) where {names,N<:NamedTuple{names}} =
     NamedTuple{names}(ExaModels.convert_array(d, backend) for d in data)
 parse_ac_power_data(filename, backend) =
@@ -32,14 +5,43 @@ parse_ac_power_data(filename, backend) =
 
 
 function parse_ac_power_data(filename)
-    ref = get_power_data_ref(filename)
+    d, f = splitdir(filename)
+    name, ext = splitext(f)
+
+    if isfile(joinpath(TMPDIR, name) * ".jld2")
+        @info "Loading cached JLD2 file"
+        return JLD2.load(joinpath(TMPDIR, name) * ".jld2", "data")
+    else
+        ff = if isfile(filename)
+            filename
+        elseif isfile(joinpath(TMPDIR, name) * ".m")
+            joinpath(TMPDIR, name) * ".m"
+        else
+            @info "Downloading $filename"
+            Downloads.download(
+                "https://raw.githubusercontent.com/power-grid-lib/pglib-opf/dc6be4b2f85ca0e776952ec22cbd4c22396ea5a3/$filename",
+                joinpath(TMPDIR, name * ".m"),
+            )
+            joinpath(TMPDIR, name * ".m")
+        end
+        @info "Loading MATPOWER file"
+        return process_ac_power_data(ff)
+    end
+end
+
+function process_ac_power_data(filename)
+    data = PowerModels.parse_file(filename)
+    PowerModels.standardize_cost_terms!(data, order = 2)
+    PowerModels.calc_thermal_limits!(data)
+
+    ref = PowerModels.build_ref(data)[:it][:pm][:nw][0]
 
     arcdict = Dict(a => k for (k, a) in enumerate(ref[:arcs]))
     busdict = Dict(k => i for (i, (k, v)) in enumerate(ref[:bus]))
     gendict = Dict(k => i for (i, (k, v)) in enumerate(ref[:gen]))
     branchdict = Dict(k => i for (i, (k, v)) in enumerate(ref[:branch]))
 
-    return (
+    data =  (
         bus = [
             begin
                 bus_loads = [ref[:load][l] for l in ref[:bus_loads][k]]
@@ -63,7 +65,7 @@ function parse_ac_power_data(filename)
         arc = [
             (i = k, rate_a = ref[:branch][l]["rate_a"], bus = busdict[i]) for
             (k, (l, i, j)) in enumerate(ref[:arcs])
-        ],
+                ],
         branch = [
             begin
                 f_idx = arcdict[i, branch["f_bus"], branch["t_bus"]]
@@ -101,7 +103,7 @@ function parse_ac_power_data(filename)
                     rate_a_sq = branch["rate_a"]^2,
                 )
             end for (i, branch) in ref[:branch]
-        ],
+                ],
         ref_buses = [busdict[i] for (i, k) in ref[:ref_buses]],
         vmax = [v["vmax"] for (k, v) in ref[:bus]],
         vmin = [v["vmin"] for (k, v) in ref[:bus]],
@@ -113,6 +115,13 @@ function parse_ac_power_data(filename)
         angmax = [b["angmax"] for (i, b) in ref[:branch]],
         angmin = [b["angmin"] for (i, b) in ref[:branch]],
     )
+
+    @info "Saving JLD2 cache file"
+    d, f = splitdir(filename)
+    name,ext = splitext(f)
+    JLD2.save(joinpath(TMPDIR, name * ".jld2"), "data", data)
+
+    return data
 end
 
 function ac_power_model(
