@@ -7,6 +7,7 @@ import PowerModels: PowerModels, silence
 
 include("opf.jl")
 include("scopf.jl")
+include("mpopf.jl")
 include("luksanvlcek.jl")
 include("distillation.jl")
 include("quadrotor.jl")
