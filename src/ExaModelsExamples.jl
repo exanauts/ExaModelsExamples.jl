@@ -4,6 +4,7 @@ import JLD2
 import Downloads
 import ExaModels: ExaModels, NLPModels
 import PowerModels: PowerModels, silence
+import Random
 
 include("opf.jl")
 include("scopf.jl")
@@ -15,7 +16,12 @@ include("goddard.jl")
 include("robot.jl")
 include("rocket.jl")
 include("bearing.jl") 
-include("camshape.jl") 
+include("camshape.jl")
+include("elec.jl")
+include("steering.jl")
+include("pinene.jl")
+include("marine.jl")
+include("gasoil.jl")
 
 const NAMES = filter(names(ExaModelsExamples; all = true)) do x
     str = string(x)

@@ -40,3 +40,5 @@ function bearing_model(nx, ny; T = Float64, backend = nothing, kwargs...)
     return ExaModels.ExaModel(core; kwargs...)
 end
 
+
+
