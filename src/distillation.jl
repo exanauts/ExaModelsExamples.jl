@@ -11,11 +11,6 @@ function distillation_column_model(N = 3; T = Float64, backend = nothing, kwargs
     alpha = 1.6
     dt = 10 / N
     xAf = 0.5
-    xA0s = ExaModels.convert_array([(i, 0.5) for i = 0:NT+1], backend)
-
-    itr0 = ExaModels.convert_array(collect(Iterators.product(1:N, 1:FT-1)), backend)
-    itr1 = ExaModels.convert_array(collect(Iterators.product(1:N, FT+1:NT)), backend)
-    itr2 = ExaModels.convert_array(collect(Iterators.product(0:N, 0:NT+1)), backend)
 
     c = ExaModels.ExaCore(T; backend = backend)
 
@@ -28,7 +23,7 @@ function distillation_column_model(N = 3; T = Float64, backend = nothing, kwargs
     ExaModels.objective(c, (yA[t, 1] - ybar)^2 for t = 0:N)
     ExaModels.objective(c, (u[t] - ubar)^2 for t = 0:N)
 
-    ExaModels.constraint(c, xA[0, i] - xA0 for (i, xA0) in xA0s)
+    ExaModels.constraint(c, xA[0, i] - 0.5 for i in 0:NT+1)
     ExaModels.constraint(
         c,
         (xA[t, 0] - xA[t-1, 0]) / dt - (1 / Ac) * (yA[t, 1] - xA[t, 0]) for t = 1:N
@@ -37,7 +32,7 @@ function distillation_column_model(N = 3; T = Float64, backend = nothing, kwargs
         c,
         (xA[t, i] - xA[t-1, i]) / dt -
         (1 / At) * (u[t] * D * (yA[t, i-1] - xA[t, i]) - V[t] * (yA[t, i] - yA[t, i+1])) for
-        (t, i) in itr0
+        t in 1:N, i in 1:FT-1
     )
     ExaModels.constraint(
         c,
@@ -51,7 +46,7 @@ function distillation_column_model(N = 3; T = Float64, backend = nothing, kwargs
         c,
         (xA[t, i] - xA[t-1, i]) / dt -
         (1 / At) * (L2[t] * (yA[t, i-1] - xA[t, i]) - V[t] * (yA[t, i] - yA[t, i+1])) for
-        (t, i) in itr1
+        t in 1:N, i in FT+1:NT
     )
     ExaModels.constraint(
         c,
@@ -63,7 +58,7 @@ function distillation_column_model(N = 3; T = Float64, backend = nothing, kwargs
     ExaModels.constraint(c, L2[t] - u[t] * D - F for t = 0:N)
     ExaModels.constraint(
         c,
-        yA[t, i] * (1 - xA[t, i]) - alpha * xA[t, i] * (1 - yA[t, i]) for (t, i) in itr2
+        yA[t, i] * (1 - xA[t, i]) - alpha * xA[t, i] * (1 - yA[t, i]) for t in 0:N, i in 0:NT+1
     )
 
     return ExaModels.ExaModel(c; kwargs...)

@@ -23,8 +23,6 @@ function goddard_model(N::Int; T = Float64, backend = nothing, kwargs...)
     n, p = 3, 1
 
     core = ExaModels.ExaCore(T; backend = backend)
-    # Intiial position
-    x0s = ExaModels.convert_array([(i, x0[i]) for i = 1:3], backend)
 
     xl = repeat([r0, 0.0, mf]', N + 1)
     xu = repeat([Inf, vmax, m0]', N + 1)
@@ -34,7 +32,7 @@ function goddard_model(N::Int; T = Float64, backend = nothing, kwargs...)
     u = ExaModels.variable(core, 1:N; lvar = 0.0, uvar = 1.0)
 
     # Initial constraint.
-    ExaModels.constraint(core, x[1, i] - x0_ for (i, x0_) in x0s)
+    ExaModels.constraint(core, x[1, i] - x0_ for (i, x0_) in enumerate(x0))
     # Dynamics
     ExaModels.constraint(core, -x[t+1, 1] + x[t, 1] + x[t, 2] * dt[1] for t = 1:N)
     ExaModels.constraint(

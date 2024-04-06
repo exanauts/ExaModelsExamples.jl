@@ -14,21 +14,12 @@ function quadrotor_model(N = 3; T = Float64, backend = nothing, kwargs...)
 
     c = ExaModels.ExaCore(T; backend = backend)
 
-    x0s = ExaModels.convert_array([(i, 0.0) for i = 1:n], backend)
-    itr0 = ExaModels.convert_array(
-        [(i, j, R[j]) for (i, j) in Base.product(1:N, 1:p)],
-        backend,
-    )
-    itr1 = ExaModels.convert_array(
-        [(i, j, Q[j], d(i, j, N)) for (i, j) in Base.product(1:N, 1:n)],
-        backend,
-    )
-    itr2 = ExaModels.convert_array([(j, Qf[j], d(N + 1, j, N)) for j = 1:n], backend)
+    itr1 = [(i, j, Q[j], d(i, j, N)) for (i, j) in Base.product(1:N, 1:n)]
 
     x = ExaModels.variable(c, 1:N+1, 1:n)
     u = ExaModels.variable(c, 1:N, 1:p)
 
-    ExaModels.constraint(c, x[1, i] - x0 for (i, x0) in x0s)
+    ExaModels.constraint(c, x[1, i] - 0.0 for i in 1:n)
     ExaModels.constraint(c, -x[i+1, 1] + x[i, 1] + (x[i, 2]) * dt for i = 1:N)
     ExaModels.constraint(
         c,
@@ -76,10 +67,13 @@ function quadrotor_model(N = 3; T = Float64, backend = nothing, kwargs...)
             u[i, 3] * sin(x[i, 7]) * tan(x[i, 8]) +
             u[i, 4]
         ) * dt for i = 1:N
-    )
-    ExaModels.objective(c, 0.5 * R * (u[i, j]^2) for (i, j, R) in itr0)
+            )
+
+    dlast = [d(N+1, j, N) for j =1:n]
+    
+    ExaModels.objective(c, 0.5 * r * (u[i, j]^2) for i in 1:N, (j, r) in enumerate(R))
     ExaModels.objective(c, 0.5 * Q * (x[i, j] - d)^2 for (i, j, Q, d) in itr1)
-    ExaModels.objective(c, 0.5 * Qf * (x[N+1, j] - d)^2 for (j, Qf, d) in itr2)
+    ExaModels.objective(c, 0.5 * qf * (x[N+1, j] - d)^2 for (d,(j, qf)) in zip(dlast,enumerate(Qf)))
 
     return ExaModels.ExaModel(c; kwargs...)
 end

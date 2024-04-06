@@ -12,6 +12,10 @@ include("luksanvlcek.jl")
 include("distillation.jl")
 include("quadrotor.jl")
 include("goddard.jl")
+include("robot.jl")
+include("rocket.jl")
+include("bearing.jl") 
+include("camshape.jl") 
 
 const NAMES = filter(names(ExaModelsExamples; all = true)) do x
     str = string(x)
