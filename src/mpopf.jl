@@ -1,9 +1,11 @@
-function parse_mp_power_data(filename, N, corrective_action_ratio, backend)
+using DelimitedFiles
+
+function parse_mp_power_data(filename, N, corrective_action_ratio, load_data, backend)
     
     data = parse_ac_power_data(filename, nothing)
     nbus = length(data.bus)
     
-    return convert_data(
+    data = convert_data(
         (
             ;
             data...,
@@ -17,10 +19,26 @@ function parse_mp_power_data(filename, N, corrective_action_ratio, backend)
         ),
         backend
     )
+
+    if load_data != nothing
+        pd = readdlm(load_data.pd)
+        qd = readdlm(load_data.qd)
+        update_load_data(data.busarray, pd, qd)
+    end
+
+    return data
+end
+
+function update_load_data(busarray, pd, qd)
+    for i=1:length(busarray)
+        b = busarray[i]
+        busarray[i] = (;b..., pd = pd[b.i], qd = pd[b.i])
+    end
 end
 
 function multi_period_ac_opf_model(
     filename = "pglib_opf_case3_lmbd.m";
+    load_data = nothing,
     N = 2,
     corrective_action_ratio = 0.1,
     backend = nothing,
@@ -28,7 +46,7 @@ function multi_period_ac_opf_model(
     kwargs...,
 )
 
-    data = parse_mp_power_data(filename, N, corrective_action_ratio, backend)
+    data = parse_mp_power_data(filename, N, corrective_action_ratio, load_data, backend)
     
     w = ExaModels.ExaCore(T; backend = backend)
 
