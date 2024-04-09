@@ -32,8 +32,7 @@ end
 function update_load_data(busarray, pd, qd)
     for i=1:length(busarray)
         b = busarray[i]
-        println(b.i, b.t)
-        busarray[i] = (;b..., pd = pd[b.i, b.t], qd = pd[b.i, b.t])
+        busarray[i] = (;b..., pd = pd[b.i, b.t], qd = qd[b.i, b.t])
     end
 end
 
