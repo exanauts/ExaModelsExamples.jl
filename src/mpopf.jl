@@ -1,40 +1,42 @@
 using DelimitedFiles
 
 function parse_mp_power_data(filename, N, corrective_action_ratio, load_data, backend)
-    
-    data = parse_ac_power_data(filename, nothing)
-    nbus = length(data.bus)
-    
-    data = convert_data(
-        (
-            ;
-            data...,
-            refarray = [(i,t) for t in 1:N for i in data.ref_buses],
-            barray = [(;b..., t = t) for t in 1:N for b in data.branch],
-            busarray = [(;b..., t = t) for t in 1:N for b in data.bus],
-            arcarray = [(;a..., t = t, cindex = (t-1) * nbus + a.bus) for t in 1:N for a in data.arc],
-            genarray = [(;g..., t = t, cindex = (t-1) * nbus + g.bus) for t in 1:N for g in data.gen],
-            idx = [(t1=t, t2=t+1, i = g.i) for t in 1:N-1 for g in data.gen],
-            Δp = corrective_action_ratio .* (data.pmax .- data.pmin)
-        ),
-        backend
-    )
 
     if load_data != nothing
         pd = readdlm(load_data.pd)
         qd = readdlm(load_data.qd)
-        update_load_data(data.busarray, pd, qd)
+        (nbus, ntime) = size(pd)
+        if ntime != N
+            @warn "Number of periods do not match with load data length"
+        end
     end
-
-    return data
+    
+    data = parse_ac_power_data(filename, nothing)
+    nbus = length(data.bus)
+    data = (
+        ;
+        data...,
+        refarray = [(i,t) for t in 1:N for i in data.ref_buses],
+        barray = [(;b..., t = t) for t in 1:N for b in data.branch],
+        busarray = [(;b..., t = t) for t in 1:N for b in data.bus],
+        arcarray = [(;a..., t = t, cindex = (t-1) * nbus + a.bus) for t in 1:N for a in data.arc],
+        genarray = [(;g..., t = t, cindex = (t-1) * nbus + g.bus) for t in 1:N for g in data.gen],
+        idx = [(t1=t, t2=t+1, i = g.i) for t in 1:N-1 for g in data.gen],
+        Δp = corrective_action_ratio .* (data.pmax .- data.pmin)
+    )
+    
+    if load_data != nothing
+        update_load_data(data.busarray, pd, qd, data.baseMVA[])
+    end
+    return convert_data(data,backend)
 end
 
-function update_load_data(busarray, pd, qd)
-    for i=1:length(busarray)
-        b = busarray[i]
-        busarray[i] = (;b..., pd = pd[b.i, b.t], qd = qd[b.i, b.t])
+function update_load_data(busarray, pd, qd, baseMVA)
+    for (i,b) in enumerate(busarray)
+        busarray[i] = (;b..., pd = pd[b.bus_i, b.t] / baseMVA, qd = qd[b.bus_i, b.t] / baseMVA)
     end
 end
+
 
 function multi_period_ac_opf_model(
     filename = "pglib_opf_case3_lmbd.m";

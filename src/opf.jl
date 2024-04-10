@@ -42,6 +42,7 @@ function process_ac_power_data(filename)
     branchdict = Dict(k => i for (i, (k, v)) in enumerate(ref[:branch]))
 
     data =  (
+        baseMVA = [ref[:baseMVA]],
         bus = [
             begin
                 bus_loads = [ref[:load][l] for l in ref[:bus_loads][k]]
@@ -50,9 +51,9 @@ function process_ac_power_data(filename)
                 gs = sum(shunt["gs"] for shunt in bus_shunts; init = 0.0)
                 qd = sum(load["qd"] for load in bus_loads; init = 0.0)
                 bs = sum(shunt["bs"] for shunt in bus_shunts; init = 0.0)
-                (i = busdict[k], pd = pd, gs = gs, qd = qd, bs = bs, bus_type = v["bus_type"])
+                (i = busdict[k], pd = pd, gs = gs, qd = qd, bs = bs, bus_i=v["bus_i"], bus_type = v["bus_type"])
             end for (k, v) in ref[:bus]
-        ],
+                ],
         gen = [
             (
                 i = gendict[k],
@@ -120,6 +121,7 @@ function process_ac_power_data(filename)
     d, f = splitdir(filename)
     name,ext = splitext(f)
     JLD2.save(joinpath(TMPDIR, name * ".jld2"), "data", data)
+
     return data
 end
 
