@@ -236,7 +236,7 @@ function _transition_state_model(problem, dom::PDEDiscretizationDomain; T = Floa
 =======
         core,
         c2,
-        b1 -1 => (u[b1+1, n] - u[b1, n])^2 for b1 in 1:dom.BREAK+1, n in 1:dom.NODES
+        b1 => (u[b1+1, n] - u[b1, n])^2 for b1 in 1:dom.BREAK+1, n in 1:dom.NODES
     )
 
     ExaModels.constraint(
