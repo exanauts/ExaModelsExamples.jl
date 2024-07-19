@@ -27,27 +27,27 @@ end
 
 function PDEDiscretizationDomain(nh, domain::Dict)
     NODES = domain[:NODES]
-    ELEMS = domain[:ELEMS]
+    ELEM = domain[:ELEMS]
     COORDS = domain[:COORDS]
-    ELEMS = domain[:ELEMS]
     BNDRY = domain[:BNDRY]
     DIMEN = 2
     BREAK = nh
+
 
     # Description of triangular elements
     TRIANG = domain[:TRIANG]
     # Edge lengths
     EDGE = [
         COORDS[TRIANG[e, mod(d1, DIMEN+1)+1], d2] - COORDS[TRIANG[e, d1], d2]
-        for e in 1:ELEMS, d1 in 1:DIMEN+1, d2 in 1:DIMEN
+        for e in 1:ELEM, d1 in 1:DIMEN+1, d2 in 1:DIMEN
     ]
     # Area of element
-    AREA = [(EDGE[e, 1, 1]*EDGE[e, 2, 2] - EDGE[e, 1, 2]*EDGE[e, 2, 1]) / 2.0 for e in 1:ELEMS]
+    AREA = [(EDGE[e, 1, 1]*EDGE[e, 2, 2] - EDGE[e, 1, 2]*EDGE[e, 2, 1]) / 2.0 for e in 1:ELEM]
     US = domain[:US] # starting point
     UE = domain[:UE] # ending point
 
     return PDEDiscretizationDomain(
-        NODES, ELEMS, DIMEN, BREAK,
+        NODES, ELEM, DIMEN, BREAK,
         AREA, TRIANG, COORDS, BNDRY, EDGE, US, UE,
     )
 end
@@ -123,13 +123,40 @@ end
 function _transition_state_model(problem, dom::PDEDiscretizationDomain; T = Float64, backend = nothing, kwargs...)
     a, b, c, d, p = problem.a, problem.b, problem.c, problem.d, problem.p
     x0 = _initial_position!(problem, dom, 10)
-    _proto_model()
+    array1 = [
+        (
+            e1, 
+            dom.TRIANG[e1, 1], 
+            dom.TRIANG[e1, 2], 
+            dom.TRIANG[e1, 3], 
+            dom.AREA[e1],
+            dom.EDGE[e1, 1, 1],
+            dom.EDGE[e1, 1, 2],
+            dom.EDGE[e1, 2, 1],
+            dom.EDGE[e1, 2, 2],
+            dom.EDGE[e1, 3, 1],
+            dom.EDGE[e1, 3, 2]
+        ) for e1 in 1:dom.ELEM
+    ]
+    array2 = [
+    (
+        e1 = e1,
+        AREA = dom.AREA[e1],
+        b = b[dom.TRIANG[e1, c1]],
+        c = c[dom.TRIANG[e1, c1]],
+        d = d[dom.TRIANG[e1, c1]],
+        p = p[dom.TRIANG[e1, c1]],
+        TRIANG = dom.TRIANG[e1, c1]
+    )
+    for e1 in 1:dom.ELEM for c1 in 1:(dom.DIMEN + 1)
+]
+    #_proto_model()
 
     ALPHA = 2.0
     H = ALPHA / (dom.BREAK+1) * sqrt(sum((dom.US[n] - dom.UE[n])^2 for n in 1:dom.NODES))
 
     # Build optimization problem
-    core = ExaModels.ExaCore(T; backend= backend)
+    core = ExaModels.ExaCore(T; backend = backend)
 
     u = ExaModels.variable(core, 1:dom.BREAK+2, 1:dom.NODES; start=x0.u)
     integral = ExaModels.variable(core, 1:dom.BREAK+2, 1:dom.ELEM)
@@ -137,37 +164,54 @@ function _transition_state_model(problem, dom::PDEDiscretizationDomain; T = Floa
 
     ExaModels.objective(core, z[1])
 
-    ExaModels.constraint(
-        core,
-        sum(integral[b1+1, e1] for e1 in 1:n) - z[1]
-        for b1 in 2:dom.ELEMS+1;
-        lcon=-Inf,
-        ucon=0.0,
+    c1 = ExaModels.constraint(
+        core, 
+        - z[1] for b1 in 2:dom.ELEM + 1;
+        lcon = -Inf,
+        ucon = 0.0,
     )
-    ExaModels.constraint(
+
+    ExaModels.constraint!(
+    core,
+    c1,
+    b1 => integral[b1 + 1, e1] for b1 in 2:dom.ELEM + 1, e1 in 1:dom.NODES
+    )
+
+    c2 = ExaModels.constraint(
         core,
-        sum((u[b1+1, n] - u[b1, n])^2 for n in 1:dom.NODES)
-        for b1 in 1:dom.BREAK+1;
+        dom.BREAK+1;
         lcon=-Inf,
         ucon=H^2,
     )
-    ExaModels.constraint(
+
+    ExaModels.constraint!(
         core,
-        dom.AREA[e1]*(
-            1 / (dom.DIMEN+1) *
-                (sum((b[dom.TRIANG[e1,c1]]*u[b1,dom.TRIANG[e1,c1]]^2/2-
-                            c[dom.TRIANG[e1,c1]]*u[b1,dom.TRIANG[e1,c1]]^(p[dom.TRIANG[e1,c1]]+1)/(p[dom.TRIANG[e1,c1]]+1)+
-                            d[dom.TRIANG[e1,c1]]*u[b1,dom.TRIANG[e1,c1]]) for c1 in 1:dom.DIMEN+1)) +
-            a / (8*dom.AREA[e1]^2)*(
-                u[b1,dom.TRIANG[e1,1]]^2*(dom.EDGE[e1,2,1]^2 + dom.EDGE[e1,2,2]^2) +
-                u[b1,dom.TRIANG[e1,2]]^2*(dom.EDGE[e1,3,1]^2 + dom.EDGE[e1,3,2]^2) +
-                u[b1,dom.TRIANG[e1,3]]^2*(dom.EDGE[e1,1,1]^2 + dom.EDGE[e1,1,2]^2) +
-                2*u[b1,dom.TRIANG[e1,1]]*u[b1,dom.TRIANG[e1,2]]*(dom.EDGE[e1,2,1]*dom.EDGE[e1,3,1] + dom.EDGE[e1,2,2]*dom.EDGE[e1,3,2]) +
-                2*u[b1,dom.TRIANG[e1,1]]*u[b1,dom.TRIANG[e1,3]]*(dom.EDGE[e1,2,1]*dom.EDGE[e1,1,1] + dom.EDGE[e1,2,2]*dom.EDGE[e1,1,2]) +
-                2*u[b1,dom.TRIANG[e1,2]]*u[b1,dom.TRIANG[e1,3]]*(dom.EDGE[e1,1,1]*dom.EDGE[e1,3,1] + dom.EDGE[e1,1,2]*dom.EDGE[e1,3,2])
+        c2,
+        b1 => (u[b1+1, n] - u[b1, n])^2 for b1 in 1:dom.BREAK+1, n in 1:dom.NODES
+    )
+
+    c3 = ExaModels.constraint(
+        core,
+        AREA*(
+            a / (8*AREA^2)*(
+                u[b1,TRIANG1]^2*(EDGE_21^2 + EDGE_22^2) +
+                u[b1,TRIANG2]^2*(EDGE_31^2 + EDGE_32^2) +
+                u[b1,TRIANG3]^2*(EDGE_11^2 + EDGE_12^2) +
+                2*u[b1,TRIANG1]*u[b1,TRIANG2]*(EDGE_21*EDGE_31 + EDGE_22*EDGE_32) +
+                2*u[b1,TRIANG1]*u[b1,TRIANG3]*(EDGE_21*EDGE_11 + EDGE_22*EDGE_12) +
+                2*u[b1,TRIANG2]*u[b1,TRIANG3]*(EDGE_11*EDGE_31 + EDGE_12*EDGE_32)
                 )
-            ) - integral[b1, e1]
-        for b1 in 1:dom.BREAK+2, e1 in 1:dom.ELEM
+            ) 
+            - integral[b1, e1]
+        for b1 in 1:dom.BREAK+2, (e1, TRIANG1, TRIANG2, TRIANG3, AREA, EDGE_11, EDGE_12, EDGE_21, EDGE_22, EDGE_31, EDGE_32) in array1
+    )
+
+    ExaModels.constraint!(
+        core,
+        c3,
+        (b1, e1) => AREA* 1 / (dom.DIMEN+1) *
+                    (b*u[b1,TRIANG]^2/2- c*u[b1,TRIANG]^(p+1)/(p+1)+ d*u[b1, TRIANG]) 
+                    for b1 in 1:dom.BREAK+2, (e1, AREA, b, c, d, p, TRIANG) in array2
     )
 
     # Boundary
@@ -184,7 +228,7 @@ function _transition_state_model(problem, dom::PDEDiscretizationDomain; T = Floa
     )
     ExaModels.constraint(
         core,
-        u[dom.BREAK+2, n] for n in 1:dom.NODES
+        u[dom.BREAK+2, n] for n in 1:dom.NODES;
         lcon=dom.UE,
         ucon=dom.UE,
     )
