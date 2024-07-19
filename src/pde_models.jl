@@ -272,8 +272,3 @@ function lane_emden_model(nh)
     return _transition_state_model(pb, dom)
 end
 
-using NLPModelsIpopt, ExaModels
-
-println("running test")
-model = dirichlet_model(20)
-ipopt(ExaModels.ExaModel(model))
