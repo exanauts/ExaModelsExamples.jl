@@ -149,7 +149,7 @@ function _transition_state_model(problem, dom::PDEDiscretizationDomain; T = Floa
         TRIANG = dom.TRIANG[e1, c1]
     )
     for e1 in 1:dom.ELEM for c1 in 1:(dom.DIMEN + 1)
-]
+    ]
     #_proto_model()
 
     ALPHA = 2.0
@@ -166,15 +166,15 @@ function _transition_state_model(problem, dom::PDEDiscretizationDomain; T = Floa
 
     c1 = ExaModels.constraint(
         core, 
-        - z[1] for b1 in 2:dom.ELEM + 1;
+        - z[1] for b1 in 1:dom.BREAK + 2;
         lcon = -Inf,
         ucon = 0.0,
     )
 
     ExaModels.constraint!(
-    core,
-    c1,
-    b1 => integral[b1 + 1, e1] for b1 in 2:dom.ELEM + 1, e1 in 1:dom.NODES
+        core,
+        c1,
+        b1 => integral[b1, e1] for b1 in 1:dom.BREAK +2, e1 in 1:dom.ELEM
     )
 
     c2 = ExaModels.constraint(
@@ -232,7 +232,7 @@ function _transition_state_model(problem, dom::PDEDiscretizationDomain; T = Floa
         lcon=dom.UE,
         ucon=dom.UE,
     )
-    return core
+    return ExaModels.ExaModel(core; kwargs...)
 end
 
 function dirichlet_model(nh)
