@@ -18,10 +18,9 @@ function catmix_model(nh; T = Float64, backend = nothing, kwargs...)
     bc = [1.0, 0.0]  # Boundary conditions for x
     alpha = 0.0      # Smoothing parameter
     rho_index = [(i, rho[i]) for i in 1:nc]
-    j_fac = [(i, factorial(i)) for i in 1:nc]
-    j_fac_1 = [(i, factorial(i-1)) for i in 1:nc]
+
     c = ExaModels.ExaCore(T; backend = backend)
-    u = ExaModels.variable(c, nh, nc; lvar = 0, uvar = 1, start = zeros(nh, nc))
+    u = ExaModels.variable(c, nh, nc; lvar = zeros(nh, nc), uvar = ones(nh, nc), start = zeros(nh, nc))
     v = ExaModels.variable(c, nh, ne; start = [mod(j, ne) for i in 1:nh, j in 1:ne])
     w = ExaModels.variable(c, nh, nc, ne; start = zeros(nh, nc, ne))
     pp = ExaModels.variable(c, nh, nc, ne; start = [mod(k, ne) for i in 1:nh, j in 1:nc, k in 1:ne])
@@ -31,49 +30,27 @@ function catmix_model(nh; T = Float64, backend = nothing, kwargs...)
     ExaModels.objective(c, -1.0 + ppf[1] + ppf[2])
     ExaModels.objective(c, alpha/h*(u[i+1, j] - u[i, j])^2 for i in 1:nh-1, j in 1:nc)
     
-    c1 = ExaModels.constraint(
+    ExaModels.constraint(
         c,
-        pp[i, k, s] - v[i, s] for i=1:nh, k=1:nc, s=1:ne
+        pp[i, k, s] - v[i, s] - h*sum(w[i, j, s]*(rho^j/factorial(j)) for j in 1:nc) for i=1:nh,  (k, rho) in rho_index, s=1:ne
     )
 
-    ExaModels.constraint!(
+    ExaModels.constraint(
         c,
-        c1,
-        (i-1)*nc*ne+(k-1)*ne+s => -h*(w[i, j, s]*(rho^j/j_fac)) for i in 1:nh, (k, rho) in rho_index, s=1:ne, (j, j_fac) in j_fac
+        Dpp[i, k, s] - sum(w[i, j, s]*(rho^(j-1)/factorial(j-1)) for j in 1:nc) for i=1:nh, (k, rho) in rho_index, s=1:ne
     )
 
-    c2 = ExaModels.constraint(
+    ExaModels.constraint(
         c,
-        Dpp[i, k, s] for i=1:nh, k=1:nc, s=1:ne
+        ppf[s] - v[nh, s] - h * sum(w[nh, j, s] / factorial(j) for j in 1:nc) for s in 1:ne
     )
 
-    ExaModels.constraint!(
+    ExaModels.constraint(
         c,
-        c2,
-        (i-1)*nc*ne+(k-1)*ne+s => -w[i, j, s]*(rho^(j-1)/j_fac) for i=1:nh, (k, rho) in rho_index, s=1:ne, (j, j_fac) in j_fac_1
+        v[i, s] + sum(w[i, j, s] * h / factorial(j) for j in 1:nc) - v[i+1, s] for i in 1:nh-1, s in 1:ne
     )
 
-    c3 = ExaModels.constraint(
-        c,
-        ppf[s] - v[nh, s] for s in 1:ne
-    )
 
-    ExaModels.constraint!(
-        c,
-        c3,
-        s => -h * w[nh, j, s] / j_fac for  s=1:ne, (j, j_fac) in j_fac
-    )
-
-    c4 = ExaModels.constraint(
-        c,
-        v[i, s] - v[i+1, s] for i in 1:nh-1, s in 1:ne
-    )
-
-    ExaModels.constraint!(
-        c,
-        c4,
-        (i-1)*ne+s => w[i, j, s] * h / j_f for i in 1:nh-1, (j, j_f) in j_fac,s in 1:ne
-    )
 
     ExaModels.constraint(
         c,
@@ -84,15 +61,14 @@ function catmix_model(nh; T = Float64, backend = nothing, kwargs...)
         c, 
         Dpp[i,j,2] - u[i,j] * (pp[i,j,1] - 10.0*pp[i,j,2]) + (1 - u[i,j])*pp[i,j,2] for i=1:nh, j=1:nc
     )
+    
 
     ExaModels.constraint(
         c,
         v[1, s] - bc for (s, bc) in [(i, bc[i]) for i in 1:ne]
     )
     
-    ExaModels.ExaModel(c; kwargs...)
+    return ExaModels.ExaModel(c; kwargs...)
 end
 
-
-using NLPModelsIpopt, ExaModels
 
