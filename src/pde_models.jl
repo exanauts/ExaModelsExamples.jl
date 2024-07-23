@@ -159,7 +159,6 @@ function _transition_state_model(problem, dom::PDEDiscretizationDomain; T = Floa
     core = ExaModels.ExaCore(T; backend = backend)
 
     u = ExaModels.variable(core, 1:dom.BREAK+2, 1:dom.NODES; start=x0.u)
-    integral = ExaModels.variable(core, 1:dom.BREAK+2, 1:dom.ELEM)
     z = ExaModels.variable(core, 1; start=x0.z)
 
     ExaModels.objective(core, z[1])
@@ -174,7 +173,24 @@ function _transition_state_model(problem, dom::PDEDiscretizationDomain; T = Floa
     ExaModels.constraint!(
         core,
         c1,
-        b1 => integral[b1, e1] for b1 in 1:dom.BREAK +2, e1 in 1:dom.ELEM
+        b1 =>   AREA*(
+                a / (8*AREA^2)*(
+                    u[b1,TRIANG1]^2*(EDGE_21^2 + EDGE_22^2) +
+                    u[b1,TRIANG2]^2*(EDGE_31^2 + EDGE_32^2) +
+                    u[b1,TRIANG3]^2*(EDGE_11^2 + EDGE_12^2) +
+                    2*u[b1,TRIANG1]*u[b1,TRIANG2]*(EDGE_21*EDGE_31 + EDGE_22*EDGE_32) +
+                    2*u[b1,TRIANG1]*u[b1,TRIANG3]*(EDGE_21*EDGE_11 + EDGE_22*EDGE_12) +
+                    2*u[b1,TRIANG2]*u[b1,TRIANG3]*(EDGE_11*EDGE_31 + EDGE_12*EDGE_32)
+                    )
+                ) 
+                for b1 in 1:dom.BREAK+2, (e1, TRIANG1, TRIANG2, TRIANG3, AREA, EDGE_11, EDGE_12, EDGE_21, EDGE_22, EDGE_31, EDGE_32) in array1
+    )
+
+    ExaModels.constraint!(
+        core,
+        c1,
+        b1 =>   AREA* 1 / (dom.DIMEN+1) * (b*u[b1,TRIANG]^2/2- c*u[b1,TRIANG]^(p+1)/(p+1)+ d*u[b1, TRIANG]) 
+                for b1 in 1:dom.BREAK+2, (e1, AREA, b, c, d, p, TRIANG) in array2
     )
 
     c2 = ExaModels.constraint(
@@ -188,30 +204,6 @@ function _transition_state_model(problem, dom::PDEDiscretizationDomain; T = Floa
         core,
         c2,
         b1 => (u[b1+1, n] - u[b1, n])^2 for b1 in 1:dom.BREAK+1, n in 1:dom.NODES
-    )
-
-    c3 = ExaModels.constraint(
-        core,
-        AREA*(
-            a / (8*AREA^2)*(
-                u[b1,TRIANG1]^2*(EDGE_21^2 + EDGE_22^2) +
-                u[b1,TRIANG2]^2*(EDGE_31^2 + EDGE_32^2) +
-                u[b1,TRIANG3]^2*(EDGE_11^2 + EDGE_12^2) +
-                2*u[b1,TRIANG1]*u[b1,TRIANG2]*(EDGE_21*EDGE_31 + EDGE_22*EDGE_32) +
-                2*u[b1,TRIANG1]*u[b1,TRIANG3]*(EDGE_21*EDGE_11 + EDGE_22*EDGE_12) +
-                2*u[b1,TRIANG2]*u[b1,TRIANG3]*(EDGE_11*EDGE_31 + EDGE_12*EDGE_32)
-                )
-            ) 
-            - integral[b1, e1]
-        for b1 in 1:dom.BREAK+2, (e1, TRIANG1, TRIANG2, TRIANG3, AREA, EDGE_11, EDGE_12, EDGE_21, EDGE_22, EDGE_31, EDGE_32) in array1
-    )
-
-    ExaModels.constraint!(
-        core,
-        c3,
-        (b1, e1) => AREA* 1 / (dom.DIMEN+1) *
-                    (b*u[b1,TRIANG]^2/2- c*u[b1,TRIANG]^(p+1)/(p+1)+ d*u[b1, TRIANG]) 
-                    for b1 in 1:dom.BREAK+2, (e1, AREA, b, c, d, p, TRIANG) in array2
     )
 
     # Boundary
@@ -271,4 +263,3 @@ function lane_emden_model(nh)
     )
     return _transition_state_model(pb, dom)
 end
-
