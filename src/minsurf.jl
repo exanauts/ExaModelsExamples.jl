@@ -21,7 +21,7 @@ function minsurf_model(nx::Int, ny::Int;T = Float64, backend = nothing, kwargs..
     hy = 1 / (ny + 1)
     area = 1 // 2 * hx * hy
 
-    c = ExaMOdels.ExaCore(T; backend = backend)
+    c = ExaModels.ExaCore(T; backend = backend)
     v = ExaModels.variable(c, nx+2, ny+2; start = v0)
 
     ExaModels.objective(c, area * (1 + ((v[i + 1, j] - v[i, j]) / hx)^2 + ((v[i, j + 1] - v[i, j]) / hy)^2)^(1 / 2) for
@@ -63,7 +63,6 @@ function minsurf_model(nx::Int, ny::Int;T = Float64, backend = nothing, kwargs..
         ucon = Inf
     )
     
-    return ExaModels.ExaModel(core; kwargs...)
+    return ExaModels.ExaModel(c; kwargs...)
 end
-
 

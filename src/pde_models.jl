@@ -272,7 +272,3 @@ function lane_emden_model(nh)
     return _transition_state_model(pb, dom)
 end
 
-println("Running tests...")
-using NLPModelsIpopt, ExaModels, MadNLP
-
-result = ipopt((dirichlet_model(200)); )
