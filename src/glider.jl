@@ -47,12 +47,25 @@ function glider_model(nh; T = Float64, backend = nothing, kwargs...)
 
     ExaModels.constraint(
         c,
-        vx[j] - (vx[j-1] + 0.5 * t_f[1]/nh * (vx_dot[j] + vx_dot[j-1])) for j in 2:nh+1
+        vx[i] - (vx[i-1] + 
+        0.5 * t_f[1]/nh * ((-(0.5*cL[i]*rho*S*(sqrt(vx[i]^2 + (vy[i] - u_c*(1 - (x[i]/r_0 - 2.5)^2)*exp(-(x[i]/r_0 - 2.5)^2))^2))^2)*((vy[i] - u_c*(1 - (x[i]/r_0 - 2.5)^2)*exp(-(x[i]/r_0 - 2.5)^2))/( sqrt(vx[i]^2 + (vy[i] - u_c*(1 - (x[i]/r_0 - 2.5)^2)*exp(-(x[i]/r_0 - 2.5)^2))^2))) - (0.5*(c0+c1*cL[i]^2)*rho*S*(sqrt(vx[i]^2 + (vy[i] - u_c*(1 - (x[i]/r_0 - 2.5)^2)*exp(-(x[i]/r_0 - 2.5)^2))^2))^2)*(vx[i]/(sqrt(vx[i]^2 + (vy[i] - u_c*(1 - (x[i]/r_0 - 2.5)^2)*exp(-(x[i]/r_0 - 2.5)^2))^2))))/m + 
+        (-(0.5*cL[i-1]*rho*S*(sqrt(vx[i-1]^2 + (vy[i-1] - u_c*(1 - (x[i-1]/r_0 - 2.5)^2)*exp(-(x[i-1]/r_0 - 2.5)^2))^2))^2)*((vy[i-1] - u_c*(1 - (x[i-1]/r_0 - 2.5)^2)*exp(-(x[i-1]/r_0 - 2.5)^2))/( sqrt(vx[i-1]^2 + (vy[i-1] - u_c*(1 - (x[i-1]/r_0 - 2.5)^2)*exp(-(x[i-1]/r_0 - 2.5)^2))^2))) - (0.5*(c0+c1*cL[i-1]^2)*rho*S*(sqrt(vx[i-1]^2 + (vy[i-1] - u_c*(1 - (x[i-1]/r_0 - 2.5)^2)*exp(-(x[i-1]/r_0 - 2.5)^2))^2))^2)*(vx[i-1]/(sqrt(vx[i-1]^2 + (vy[i-1] - u_c*(1 - (x[i-1]/r_0 - 2.5)^2)*exp(-(x[i-1]/r_0 - 2.5)^2))^2))))/m)) for i in 2:nh+1
     )
+    #The following two lengthy expressions represent vx_dot and vy_dot respectively. This is due to ExaModels does not support @expression.
+    # @variables(model, begin
+    # 0 <= t_f,                       (start=1.0)
+    # 0.0 <= x[k=0:nh],               (start=x_0 + vx_0*(k/nh))
+    # y[k=0:nh],                      (start=y_0 + (k/nh)*(y_f - y_0))
+    # 0.0 <= vx[k=0:nh],              (start=vx_0)
+    # vy[k=0:nh],                     (start=vy_0)
+    # cL_min <= cL[k=0:nh] <= cL_max, (start=cL_max/2.0)
+    # end)
 
     ExaModels.constraint(
         c,
-        vy[j] - (vy[j-1] + 0.5 * t_f[1]/nh * (vy_dot[j] + vy_dot[j-1])) for j in 2:nh+1
+        vy[i] - (vy[i-1] + 
+        0.5 * t_f[1]/nh * (((0.5*cL[i]*rho*S*(sqrt(vx[i]^2 + (vy[i] - u_c*(1 - (x[i]/r_0 - 2.5)^2)*exp(-(x[i]/r_0 - 2.5)^2))^2))^2)*(vx[i]/(sqrt(vx[i]^2 + (vy[i] - u_c*(1 - (x[i]/r_0 - 2.5)^2)*exp(-(x[i]/r_0 - 2.5)^2))^2))) - (0.5*(c0+c1*cL[i]^2)*rho*S*(sqrt(vx[i]^2 + (vy[i] - u_c*(1 - (x[i]/r_0 - 2.5)^2)*exp(-(x[i]/r_0 - 2.5)^2))^2))^2)*((vy[i] - u_c*(1 - (x[i]/r_0 - 2.5)^2)*exp(-(x[i]/r_0 - 2.5)^2))/(sqrt(vx[i]^2 + (vy[i] - u_c*(1 - (x[i]/r_0 - 2.5)^2)*exp(-(x[i]/r_0 - 2.5)^2))^2))))/m - g + 
+        ((0.5*cL[i-1]*rho*S*(sqrt(vx[i-1]^2 + (vy[i-1] - u_c*(1 - (x[i-1]/r_0 - 2.5)^2)*exp(-(x[i-1]/r_0 - 2.5)^2))^2))^2)*(vx[i-1]/(sqrt(vx[i-1]^2 + (vy[i-1] - u_c*(1 - (x[i-1]/r_0 - 2.5)^2)*exp(-(x[i-1]/r_0 - 2.5)^2))^2))) - (0.5*(c0+c1*cL[i-1]^2)*rho*S*(sqrt(vx[i-1]^2 + (vy[i-1] - u_c*(1 - (x[i-1]/r_0 - 2.5)^2)*exp(-(x[i-1]/r_0 - 2.5)^2))^2))^2)*((vy[i-1] - u_c*(1 - (x[i-1]/r_0 - 2.5)^2)*exp(-(x[i-1]/r_0 - 2.5)^2))/(sqrt(vx[i-1]^2 + (vy[i-1] - u_c*(1 - (x[i-1]/r_0 - 2.5)^2)*exp(-(x[i-1]/r_0 - 2.5)^2))^2))))/m - g)) for i in 2:nh+1
     )
 
     ExaModels.constraint(
@@ -90,11 +103,5 @@ function glider_model(nh; T = Float64, backend = nothing, kwargs...)
         vy[nh+1] - vy_f
     )
 
-    ExaModels.Examodel(c,; kwargs...)
+    ExaModels.ExaModel(c,; kwargs...)
 end
-
-
-println("Running tests...")
-using NLPModelsIpopt, ExaModels, MadNLP
-
-result = madnlp((glider_model(200));print_level = MadNLP.INFO )
