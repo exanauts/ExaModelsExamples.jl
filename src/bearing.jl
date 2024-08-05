@@ -5,7 +5,7 @@
 # COPS 3.1 - March 2004
 
 
-function bearing_model(nx, ny; T = Float64, backend = nothing, kwargs...)
+function bearing_model(nx, ny; T = Float64, backend = CUDABackend(), kwargs...)
     b = 10              # grid is (0,2*pi)x(0,2*b)
     e = 0.1             # eccentricity
 
@@ -39,6 +39,3 @@ function bearing_model(nx, ny; T = Float64, backend = nothing, kwargs...)
 
     return ExaModels.ExaModel(core; kwargs...)
 end
-
-
-
