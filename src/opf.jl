@@ -192,12 +192,12 @@ function ac_power_model(
         b in data.branch
     )
 
-    # c6 = ExaModels.constraint(
-    #     w,
-    #     va[b.f_bus] - va[b.t_bus] for b in data.branch;
-    #     lcon = data.angmin,
-    #     ucon = data.angmax,
-    # )
+    c6 = ExaModels.constraint(
+        w,
+        va[b.f_bus] - va[b.t_bus] for b in data.branch;
+        lcon = data.angmin,
+        ucon = data.angmax,
+    )
     c7 = ExaModels.constraint(
         w,
         p[b.f_idx]^2 + q[b.f_idx]^2 - b.rate_a_sq for b in data.branch;
