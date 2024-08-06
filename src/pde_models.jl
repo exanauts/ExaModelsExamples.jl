@@ -123,23 +123,12 @@ end
 function _transition_state_model(problem, dom::PDEDiscretizationDomain; T = Float64, backend = nothing, kwargs...)
     a, b, c, d, p = problem.a, problem.b, problem.c, problem.d, problem.p
     x0 = _initial_position!(problem, dom, 10)
-<<<<<<< HEAD
     array1 = [
-=======
-    array = [
->>>>>>> 7252084 (solved error in pde_models)
         (
             e1, 
             dom.TRIANG[e1, 1], 
             dom.TRIANG[e1, 2], 
             dom.TRIANG[e1, 3], 
-<<<<<<< HEAD
-=======
-            b[dom.TRIANG[e1,1]], 
-            c[dom.TRIANG[e1,1]], 
-            d[dom.TRIANG[e1,1]], 
-            p[dom.TRIANG[e1,1]],
->>>>>>> 7252084 (solved error in pde_models)
             dom.AREA[e1],
             dom.EDGE[e1, 1, 1],
             dom.EDGE[e1, 1, 2],
@@ -149,7 +138,6 @@ function _transition_state_model(problem, dom::PDEDiscretizationDomain; T = Floa
             dom.EDGE[e1, 3, 2]
         ) for e1 in 1:dom.ELEM
     ]
-<<<<<<< HEAD
     array2 = [
     (
         e1 = e1,
@@ -162,8 +150,6 @@ function _transition_state_model(problem, dom::PDEDiscretizationDomain; T = Floa
     )
     for e1 in 1:dom.ELEM for c1 in 1:(dom.DIMEN + 1)
     ]
-=======
->>>>>>> 7252084 (solved error in pde_models)
     #_proto_model()
 
     ALPHA = 2.0
@@ -179,17 +165,12 @@ function _transition_state_model(problem, dom::PDEDiscretizationDomain; T = Floa
 
     c1 = ExaModels.constraint(
         core, 
-<<<<<<< HEAD
         - z[1] for b1 in 1:dom.BREAK + 2;
-=======
-        - z[1] for b1 in 2:dom.ELEM + 1;
->>>>>>> 7252084 (solved error in pde_models)
         lcon = -Inf,
         ucon = 0.0,
     )
 
     ExaModels.constraint!(
-<<<<<<< HEAD
         core,
         c1,
         b1 =>   AREA*(
@@ -214,48 +195,15 @@ function _transition_state_model(problem, dom::PDEDiscretizationDomain; T = Floa
 
     c2 = ExaModels.constraint(
         core,
-=======
-    core,
-    c1,
-    b1 => integral[b1 + 1, e1] for b1 in 2:dom.ELEM + 1, e1 in 1:dom.NODES
-    )
-
-    c2 = ExaModels.constraint(
-        core,
->>>>>>> 7252084 (solved error in pde_models)
         dom.BREAK+1;
         lcon=-Inf,
         ucon=H^2,
     )
 
     ExaModels.constraint!(
-<<<<<<< HEAD
         core,
         c2,
         b1 => (u[b1+1, n] - u[b1, n])^2 for b1 in 1:dom.BREAK+1, n in 1:dom.NODES
-=======
-        core,
-        c2,
-        b1 => (u[b1+1, n] - u[b1, n])^2 for b1 in 1:dom.BREAK+1, n in 1:dom.NODES
-    )
-
-    ExaModels.constraint(
-        core,
-        AREA*(
-            1 / (dom.DIMEN+1) *
-                (((b*u[b1,TRIANG1]^2/2- c*u[b1,TRIANG1]^(p+1)/(p+1)+ d*u[b1, TRIANG1]))) +
-            a / (8*AREA^2)*(
-                u[b1,TRIANG1]^2*(EDGE_21^2 + EDGE_22^2) +
-                u[b1,TRIANG2]^2*(EDGE_31^2 + EDGE_32^2) +
-                u[b1,TRIANG3]^2*(EDGE_11^2 + EDGE_12^2) +
-                2*u[b1,TRIANG1]*u[b1,TRIANG2]*(EDGE_21*EDGE_31 + EDGE_22*EDGE_32) +
-                2*u[b1,TRIANG1]*u[b1,TRIANG3]*(EDGE_21*EDGE_11 + EDGE_22*EDGE_12) +
-                2*u[b1,TRIANG2]*u[b1,TRIANG3]*(EDGE_11*EDGE_31 + EDGE_12*EDGE_32)
-                )
-            ) 
-            - integral[b1, e1]
-        for b1 in 1:dom.BREAK+2, (e1, TRIANG1, TRIANG2, TRIANG3, b, c, d, p, AREA, EDGE_11, EDGE_12, EDGE_21, EDGE_22, EDGE_31, EDGE_32) in array
->>>>>>> 7252084 (solved error in pde_models)
     )
 
     # Boundary
@@ -314,10 +262,4 @@ function lane_emden_model(nh)
         fill(3.0, dom.NODES),
     )
     return _transition_state_model(pb, dom)
-<<<<<<< HEAD
 end
-=======
-end
-
-
->>>>>>> 7252084 (solved error in pde_models)
