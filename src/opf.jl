@@ -321,14 +321,14 @@ function ac_rectangle_power_model(
 
     ExaModels.constraint(
         w,
-        (vi[b.f_bus] * vr[b.t_bus] - vr[b.f_bus] * vi[b.t_bus]) - (vr[b.f_bus] * vr[b.t_bus] + vi[b.f_bus] * vi[b.t_bus]) * tan(angmin) for (b, angmin) in [(data.branch[i], data.angmin[i]) for i in length(data.angmin)];
+        (vi[b.f_bus] * vr[b.t_bus] - vr[b.f_bus] * vi[b.t_bus]) - angmin * (vr[b.f_bus] * vr[b.t_bus] + vi[b.f_bus] * vi[b.t_bus]) for (b, angmin) in [data.branch[i], data.angmin[i] for i in 1:length(data.angmin)];
         lcon = 0,
         ucon = Inf
     )
 
     ExaModels.constraint(
         w,
-        (vi[b.f_bus] * vr[b.t_bus] - vr[b.f_bus] * vi[b.t_bus]) - (vr[b.f_bus] * vr[b.t_bus] + vi[b.f_bus] * vi[b.t_bus]) * tan(angmax) for (b, angmax) in [(data.branch[i], data.angmax[i]) for i in length(data.angmax)];
+        (vi[b.f_bus] * vr[b.t_bus] - vr[b.f_bus] * vi[b.t_bus]) - angmax * (vr[b.f_bus] * vr[b.t_bus] + vi[b.f_bus] * vi[b.t_bus]) for (b, angmax) in [data.branch[i], data.angmin[i] for i in 1:length(data.angmax)];
         lcon = -Inf,
         ucon = 0
     )
