@@ -222,3 +222,127 @@ function ac_power_model(
     return ExaModels.ExaModel(w; kwargs...)
 
 end
+
+
+function ac_rectangle_power_model(
+    filename = "pglib_opf_case3_lmbd.m";
+    backend = nothing,
+    T = Float64,
+    kwargs...,
+)
+
+    data = parse_ac_power_data(filename, backend)
+
+    w = ExaModels.ExaCore(T; backend = backend)
+
+    # real parts of voltage 
+    vr = ExaModels.variable(w, length(data.bus); start = fill(1, length(data.bus)))
+
+    # imaginary parts of voltage
+    vi = ExaModels.variable(w, length(data.bus);)
+
+    # active power generation
+    pg = ExaModels.variable(w, length(data.gen); lvar = data.pmin, uvar = data.pmax)
+
+    # reactive power generation
+    qg = ExaModels.variable(w, length(data.gen); lvar = data.qmin, uvar = data.qmax)
+
+    # active power in arc
+    p = ExaModels.variable(w, length(data.arc); lvar = -data.rate_a, uvar = data.rate_a)
+
+    # reactive power in arc
+    q = ExaModels.variable(w, length(data.arc); lvar = -data.rate_a, uvar = data.rate_a)
+
+    ExaModels.objective(
+        w,
+        g.cost1 * pg[g.i]^2 + g.cost2 * pg[g.i] + g.cost3 for g in data.gen
+    )
+
+    # reference bus
+    ExaModels.constraint(
+        w,
+        vi[i] for i in data.ref_buses
+    )
+
+    #  vmin <= v[i] <= vmax
+    ExaModels.constraint(
+        w,
+        vr[i]^2 + vi[i]^2 for i in 1:length(data.bus);
+        lcon = data.vmin,
+        ucon = data.vmax
+    )
+
+    # power balance
+    p_bal = ExaModels.constraint(w, b.pd + b.gs * (vi[b.i]^2 + vr[b.i]^2) for b in data.bus)
+
+    q_bal = ExaModels.constraint(w, b.qd - b.bs * (vi[b.i]^2 + vr[b.i]^2) for b in data.bus)
+
+    ExaModels.constraint!(w, p_bal, a.bus => p[a.i] for a in data.arc)
+
+    ExaModels.constraint!(w, q_bal, a.bus => q[a.i] for a in data.arc)
+
+    ExaModels.constraint!(w, p_bal, g.bus => -pg[g.i] for g in data.gen)
+
+    ExaModels.constraint!(w, q_bal, g.bus => -qg[g.i] for g in data.gen)
+
+    # ohms_yt_form
+    ExaModels.constraint(
+        w,
+        p[b.f_idx] - b.c5 * (vi[b.f_bus]^2 + vr[b.f_bus]^2) -
+        b.c3 * (vi[b.f_bus] * vi[b.t_bus] + vr[b.f_bus] * vr[b.t_bus]) -
+        b.c4 * (vi[b.f_bus] * vr[b.t_bus] - vr[b.f_bus] * vi[b.t_bus]) for
+        b in data.branch
+    )
+
+    ExaModels.constraint(
+        w,
+        q[b.f_idx] + b.c6 * (vi[b.f_bus]^2 + vr[b.f_bus]^2) +
+        b.c4 * (vi[b.f_bus] * vi[b.t_bus] + vr[b.f_bus] * vr[b.t_bus]) -
+        b.c3 * (vi[b.f_bus] * vr[b.t_bus] - vr[b.f_bus] * vi[b.t_bus]) for
+        b in data.branch
+    )
+
+    # ohms_yt_to
+    ExaModels.constraint(
+        w,
+        p[b.t_idx] - b.c7 * (vi[b.t_bus]^2 + vr[b.t_bus]^2) -
+        b.c1 * (vi[b.f_bus] * vi[b.t_bus] + vr[b.f_bus] * vr[b.t_bus]) -
+        b.c2 * (-(vi[b.f_bus] * vr[b.t_bus] - vr[b.f_bus] * vi[b.t_bus])) for
+        b in data.branch
+    )
+
+    ExaModels.constraint(
+        w,
+        q[b.t_idx] + b.c8 * (vi[b.t_bus]^2 + vr[b.t_bus]^2) +
+        b.c2 * (vi[b.f_bus] * vi[b.t_bus] + vr[b.f_bus] * vr[b.t_bus]) -
+        b.c1 * (-(vi[b.f_bus] * vr[b.t_bus] - vr[b.f_bus] * vi[b.t_bus])) for
+        b in data.branch
+    )
+
+    ExaModels.constraint(
+        w,
+        (vi[b.f_bus] * vr[b.t_bus] - vr[b.f_bus] * vi[b.t_bus]) - angmin * (vr[b.f_bus] * vr[b.t_bus] + vi[b.f_bus] * vi[b.t_bus]) for (b, angmin) in [data.branch[i], data.angmin[i] for i in 1:length(data.angmin)];
+        lcon = 0,
+        ucon = Inf
+    )
+
+    ExaModels.constraint(
+        w,
+        (vi[b.f_bus] * vr[b.t_bus] - vr[b.f_bus] * vi[b.t_bus]) - angmax * (vr[b.f_bus] * vr[b.t_bus] + vi[b.f_bus] * vi[b.t_bus]) for (b, angmax) in [data.branch[i], data.angmin[i] for i in 1:length(data.angmax)];
+        lcon = -Inf,
+        ucon = 0
+    )
+
+    ExaModels.constraint(
+        w,
+        p[b.f_idx]^2 + q[b.f_idx]^2 - b.rate_a_sq for b in data.branch;
+        lcon = fill!(similar(data.branch, Float64, length(data.branch)), -Inf),
+    )
+    ExaModels.constraint(
+        w,
+        p[b.t_idx]^2 + q[b.t_idx]^2 - b.rate_a_sq for b in data.branch;
+        lcon = fill!(similar(data.branch, Float64, length(data.branch)), -Inf),
+    )
+
+    return ExaModels.ExaModel(w; kwargs...)
+end
