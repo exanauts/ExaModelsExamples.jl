@@ -268,8 +268,8 @@ function ac_rectangle_power_model(
     ExaModels.constraint(
         w,
         vr[i]^2 + vi[i]^2 for i in 1:length(data.bus);
-        lcon = data.vmin,
-        ucon = data.vmax
+        lcon = data.vmin .^2,
+        ucon = data.vmax .^2
     )
 
     # power balance
