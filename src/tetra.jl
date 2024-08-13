@@ -90,10 +90,10 @@ function tetra_model(x0 = xe_tetra, TETS::Vector{Int64} = Tets_tetra, Const::Vec
     return ExaModels.ExaModel(c; kwargs...)
 end
 
-tetra_duct12_model(; T = Float64, backend = nothing) = tetra_model(xe_duct12, TETS_duct12, Const_duct12, T = T, backend = backend)
-tetra_duct15_model(; T = Float64, backend = nothing) = tetra_model(xe_duct15, TETS_duct15, Const_duct15, T = T, backend = backend)
-tetra_duct20_model(; T = Float64, backend = nothing) = tetra_model(xe_duct20, TETS_duct20, Const_duct20, T = T, backend = backend)
-tetra_hook_model(; T = Float64, backend = nothing) = tetra_model(xe_hook, TETS_hook, Const_hook, T = T, backend = backend)
-tetra_foam5_model(; T = Float64, backend = nothing) = tetra_model(xe_foam5, TETS_foam5, Const_foam5, T = T, backend = backend)
-tetra_gear_model(; T = Float64, backend = nothing) = tetra_model(xe_gear, TETS_gear, Const_gear, T = T, backend = backend)
+tetra_duct12_model(; T = Float64, backend = nothing) = tetra_model(xe_duct12, TETS_duct12, Const_duct12; T = T, backend = backend)
+tetra_duct15_model(; T = Float64, backend = nothing) = tetra_model(xe_duct15, TETS_duct15, Const_duct15; T = T, backend = backend)
+tetra_duct20_model(; T = Float64, backend = nothing) = tetra_model(xe_duct20, TETS_duct20, Const_duct20; T = T, backend = backend)
+tetra_hook_model(; T = Float64, backend = nothing) = tetra_model(xe_hook, TETS_hook, Const_hook; T = T, backend = backend)
+tetra_foam5_model(; T = Float64, backend = nothing) = tetra_model(xe_foam5, TETS_foam5, Const_foam5; T = T, backend = backend)
+tetra_gear_model(; T = Float64, backend = nothing) = tetra_model(xe_gear, TETS_gear, Const_gear; T = T, backend = backend)
 
