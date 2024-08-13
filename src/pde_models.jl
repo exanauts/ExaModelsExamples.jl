@@ -227,7 +227,7 @@ function _transition_state_model(problem, dom::PDEDiscretizationDomain; T = Floa
     return ExaModels.ExaModel(core; kwargs...)
 end
 
-function dirichlet_model(nh)
+function dirichlet_model(nh; T = Float64, backend = nothing)
     dom = PDEDiscretizationDomain(nh, CIRCLE_DOMAIN)
     println(dom.ELEM)
     pb = PDEProblem(
@@ -237,10 +237,10 @@ function dirichlet_model(nh)
         fill(0.0, dom.NODES),
         fill(3.0, dom.NODES),
     )
-    return _transition_state_model(pb, dom)
+    return _transition_state_model(pb, dom; T = T, backend = backend)
 end
 
-function henon_model(nh)
+function henon_model(nh; T = Float64, backend = nothing)
     dom = PDEDiscretizationDomain(nh, CIRCLE_REC_DOMAIN)
     pb = PDEProblem(
         1.0,
@@ -249,10 +249,10 @@ function henon_model(nh)
         fill(0.0, dom.NODES),
         fill(3.0, dom.NODES),
     )
-    return _transition_state_model(pb, dom)
+    return _transition_state_model(pb, dom; T = T, backend = backend)
 end
 
-function lane_emden_model(nh)
+function lane_emden_model(nh; T = Float64, backend = nothing)
     dom = PDEDiscretizationDomain(nh, RECTANGLE_DOMAIN)
     pb = PDEProblem(
         1.0,
@@ -261,5 +261,5 @@ function lane_emden_model(nh)
         fill(0.0, dom.NODES),
         fill(3.0, dom.NODES),
     )
-    return _transition_state_model(pb, dom)
+    return _transition_state_model(pb, dom; T = T, backend = backend)
 end
