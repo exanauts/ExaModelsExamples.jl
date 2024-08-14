@@ -73,6 +73,6 @@ function triangle_model(x0 = xe, TRIS::Vector{Int64} = Tr, Const::Vector{Int64} 
     return ExaModels.ExaModel(c; kwargs...)
 end
 
-triangle_deer_model() = triangle_model(xe_deer, TRIS_deer, Const_deer)
-triangle_pacman_model() = triangle_model(xe_pacman, TRIS_pacman, Const_pacman)
-triangle_turtle_model() = triangle_model(xe_turtle, TRIS_turtle, Const_turtle)
+triangle_deer_model(; T = Float64, backend = nothing) = triangle_model(xe_deer, TRIS_deer, Const_deer; T = T, backend = backend)
+triangle_pacman_model(; T = Float64, backend = nothing) = triangle_model(xe_pacman, TRIS_pacman, Const_pacman; T = T, backend = backend)
+triangle_turtle_model(; T = Float64, backend = nothing) = triangle_model(xe_turtle, TRIS_turtle, Const_turtle; T = T, backend = backend)
