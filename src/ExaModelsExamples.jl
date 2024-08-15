@@ -30,7 +30,7 @@ include("glider.jl")
 include("minsurf.jl")
 include("polygon.jl")
 include("tetra.jl")
-include("torison.jl")
+include("torsion.jl")
 include("triangle.jl")
 include("methanol.jl")
 
