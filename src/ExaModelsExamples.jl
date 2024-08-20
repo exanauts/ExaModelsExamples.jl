@@ -5,7 +5,7 @@ import Downloads
 import ExaModels: ExaModels, NLPModels
 import PowerModels: PowerModels, silence
 import Random
-import LuksanVleckModels
+import LuksanVleckBenchmark
 
 include("opf.jl")
 include("scopf.jl")
