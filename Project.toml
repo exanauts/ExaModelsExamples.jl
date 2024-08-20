@@ -9,6 +9,7 @@ ExaModels = "1037b233-b668-4ce9-9b63-f9f681f55dd2"
 JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 PowerModels = "c36e90e8-916a-50a6-bd94-075b64ef4655"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+LuksanVleckModels = "dc0393f0-98a3-4386-a65b-465e1307889b"
 
 [compat]
 CUDA = "5.2.0"
