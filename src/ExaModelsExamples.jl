@@ -5,6 +5,7 @@ import Downloads
 import ExaModels: ExaModels, NLPModels
 import PowerModels: PowerModels, silence
 import Random
+import LuksanVleckBenchmark
 
 include("opf.jl")
 include("scopf.jl")
@@ -23,6 +24,16 @@ include("pinene.jl")
 include("marine.jl")
 include("gasoil.jl")
 include("pde_models.jl")
+include("catmix.jl")
+include("chain.jl")
+include("channel.jl")
+include("glider.jl")
+include("minsurf.jl")
+include("polygon.jl")
+include("tetra.jl")
+include("torsion.jl")
+include("triangle.jl")
+include("methanol.jl")
 
 const NAMES = filter(names(ExaModelsExamples; all = true)) do x
     str = string(x)
