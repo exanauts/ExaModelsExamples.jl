@@ -125,10 +125,10 @@ function _transition_state_model(problem, dom::PDEDiscretizationDomain; T = Floa
     x0 = _initial_position!(problem, dom, 10)
     array1 = [
         (
-            e1, 
-            dom.TRIANG[e1, 1], 
-            dom.TRIANG[e1, 2], 
-            dom.TRIANG[e1, 3], 
+            e1,
+            dom.TRIANG[e1, 1],
+            dom.TRIANG[e1, 2],
+            dom.TRIANG[e1, 3],
             dom.AREA[e1],
             dom.EDGE[e1, 1, 1],
             dom.EDGE[e1, 1, 2],
@@ -165,7 +165,7 @@ function _transition_state_model(problem, dom::PDEDiscretizationDomain; T = Floa
     ExaModels.objective(core, z[1])
 
     c1 = ExaModels.constraint(
-        core, 
+        core,
         - z[1] for b1 in 1:dom.BREAK + 2;
         lcon = -Inf,
         ucon = 0.0,
@@ -201,7 +201,7 @@ function _transition_state_model(problem, dom::PDEDiscretizationDomain; T = Floa
                 2*u[b1,TRIANG1]*u[b1,TRIANG3]*(EDGE_21*EDGE_11 + EDGE_22*EDGE_12) +
                 2*u[b1,TRIANG2]*u[b1,TRIANG3]*(EDGE_11*EDGE_31 + EDGE_12*EDGE_32)
                 )
-            ) 
+            )
             - integral[b1, e1]
         for b1 in 1:dom.BREAK+2, (e1, TRIANG1, TRIANG2, TRIANG3, AREA, EDGE_11, EDGE_12, EDGE_21, EDGE_22, EDGE_31, EDGE_32) in array1
     )
@@ -210,7 +210,7 @@ function _transition_state_model(problem, dom::PDEDiscretizationDomain; T = Floa
         core,
         c3,
         (b1, e1) => AREA* 1 / (dom.DIMEN+1) *
-                    (b*u[b1,TRIANG]^2/2- c*u[b1,TRIANG]^(p+1)/(p+1)+ d*u[b1, TRIANG]) 
+                    (b*u[b1,TRIANG]^2/2- c*u[b1,TRIANG]^(p+1)/(p+1)+ d*u[b1, TRIANG])
                     for b1 in 1:dom.BREAK+2, (e1, AREA, b, c, d, p, TRIANG) in array2
     )
 
@@ -272,7 +272,3 @@ function lane_emden_model(nh)
     return _transition_state_model(pb, dom)
 end
 
-println("Running tests...")
-using NLPModelsIpopt, ExaModels, MadNLP
-
-result = ipopt((dirichlet_model(200)); )

@@ -93,8 +93,3 @@ function glider_model(nh; T = Float64, backend = nothing, kwargs...)
     ExaModels.Examodel(c,; kwargs...)
 end
 
-
-println("Running tests...")
-using NLPModelsIpopt, ExaModels, MadNLP
-
-result = madnlp((glider_model(200));print_level = MadNLP.INFO )
