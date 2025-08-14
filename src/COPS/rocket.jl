@@ -21,7 +21,7 @@ function rocket_model(nh; T = Float64, backend = nothing, kwargs...)
 
     core = ExaModels.ExaCore(T; backend= backend, minimize=false)
 
-    h = ExaModels.variable(core,0:nh; start=1.0, lvar = 0.0)
+    h = ExaModels.variable(core,0:nh; start=1.0, lvar = 1.0)
     v = ExaModels.variable(core,0:nh; start=(i/nh*(1.0 - i/nh) for i=0:nh), lvar = 0.0)
     m = ExaModels.variable(core,0:nh; start=((m_f - m_0)*(i/nh) + m_0 for i=0:nh), lvar = m_f, uvar = m_0)
     T = ExaModels.variable(core,0:nh; start=T_max/2.0, lvar = 0.0, uvar = T_max)
